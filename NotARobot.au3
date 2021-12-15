@@ -1,3 +1,17 @@
+#NoTrayIcon
+#Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#AutoIt3Wrapper_Outfile_x64=NotARobot_v0.88beta.exe
+#AutoIt3Wrapper_Compression=4
+#AutoIt3Wrapper_UseUpx=y
+#AutoIt3Wrapper_Res_ProductName=NotARobot
+#AutoIt3Wrapper_Res_ProductVersion=0.89
+#AutoIt3Wrapper_Res_Language=1033
+#AutoIt3Wrapper_Run_Au3Stripper=y
+#Au3Stripper_Parameters=/pe /sf /sv /mo /rm
+#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
+; *** Start added by AutoIt3Wrapper ***
+#include <AutoItConstants.au3>
+; *** End added by AutoIt3Wrapper ***
 #include <Array.au3>
 #include <Constants.au3>
 #include <File.au3>
@@ -6,7 +20,6 @@
 #include <StaticConstants.au3>
 #include <Timers.au3>
 #include <WindowsConstants.au3>
-#NoTrayIcon
 
 ;
 ; AutoIt Version: 3.0
@@ -137,7 +150,6 @@ Func Main()
 
 		; Wait from 3 seconds to 15 minutes
 		TrapSleep(Random(3*$seconds,15*$minutes,1), True)
-;~ 		TrapSleep(5000, True) ;Debug
 	WEnd
 EndFunc
 
@@ -237,7 +249,7 @@ EndFunc
 ; Open Explorer and navigate to desired directory
 Func fOpenDir ($fullpath)
 	; Open Explorer and goes to address bar
-	ShowCurrentApp("Running", "Explorer")
+	ShowCurrentApp("Running", "explorer")
 	Send("{LWINDOWN}e{LWINUP}")
 	TrapSleep(1000)
 	Send("!d")
