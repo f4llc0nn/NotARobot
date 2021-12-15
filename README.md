@@ -8,11 +8,9 @@ Open Explorer and navigate into binary directory, then hit enters to open it (ch
 2) MS Office365 (Outlook, Word, Excel)
 3) Notepad
 4) Calc
-5) Snipping Tool
-
 
 ## Install
-Download compiled version from HERE or download AutoIT v3, do your changes and compile yourself into a binary file.
+Download compiled version from [here](https://github.com/0xleone/NotARobot/releases) or download AutoIT v3, do your changes and compile yourself into a binary file.
 
 ## Usage
 Just run the compiled app. It will randomly close after a while (Exit Status = 0).\
@@ -31,7 +29,7 @@ The hotkey is **NOT** reliable since this project does a LOT of typing emulation
 • Notepad, Calc, SnippingTool: Native\
 
 ## TODO:
-• Snipping Tool: Make a screenshot\
+• Add Snipping Tool: Make a screenshot\
 • Word/Excel: Create a random file\
 • Word/Excel: Delete a random created file\
 • Outlook sending random e-mail to itself and/or to a disposable e-mail (e.g. 10MinuteMail.com)\
