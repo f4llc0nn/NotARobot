@@ -34,7 +34,7 @@
 ;
 ; Usage:
 ; - Just run the app.
-; - If needed, press SHIFT+ESC to terminate .
+; - If needed, press SHIFT+ESC to terminate script.
 ;
 
 
@@ -53,14 +53,12 @@ Global Const $workDir = @TempDir & '\NotARobot'	; Guarantee directory permission
 Global $minutes = 60000
 Global $seconds = 1000
 
-Global Const $numApps = 6						; Self-explanatory -> Apps have fixed position - see $ExecApp definition.
-Global $listWin[$numApps]						; Array of opened apps to avoid reopen and easy exiting
-Global $listFiles = [0]							; Dynamic array - increases for each file created
-Global $ExecApp[$numApps]   = [ fCalc, fNotepad, fEdge, fWord, fExcel, fOutlook ]
-Global $labelApps[$numApps] = [ "Calc", "Notepad", "Edge", "Word", "Excel", "Outlook" ]
+Global $runningApps[][]  = [["None", "None"]]	; Array of app handles and names for easy exiting
+Global $filesCreated[] = ["None"]				; Dynamic array - increases for each file created
 Global $fDebug, $lAction, $lInfo				; GUI
-Global $randomWin								; Current App running
-
+Global $currentApp = 0							; Dynamic label of current app running
+Global $ExecApp[]   = [ fCalc, fNotepad, fEdge, fWord, fExcel, fOutlook ]
+Global $numApps = UBound($ExecApp)				; Self-explanatory
 
 ;;;;;;;;;;;;;;;;;;;;
 ;
@@ -68,17 +66,18 @@ Global $randomWin								; Current App running
 ;
 ;;;;;;;;;;;;;;;;;;;;
 
-$pathEdge  = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-$pathMail  = "C:\Program Files\Microsoft Office\root\Office16\OUTLOOK.exe"
-$pathExcel = "C:\Program Files\Microsoft Office\root\Office16\EXCEL.exe"
-$pathWord  = "C:\Program Files\Microsoft Office\root\Office16\WINWORD.exe"
-$pathNote  = "C:\Windows\System32\notepad.exe"
-$pathCalc  = "C:\Windows\System32\calc.exe"
+Global Enum $calc, $notepad, $edge, $word, $excel, $outlook, $appListSize
+Global $appPath[$appListSize]
+$appPath[$calc]    = "C:\Windows\System32\calc.exe"
+$appPath[$notepad] = "C:\Windows\System32\notepad.exe"
+$appPath[$edge]    = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+$appPath[$word]    = "C:\Program Files\Microsoft Office\root\Office16\WINWORD.exe"
+$appPath[$excel]   = "C:\Program Files\Microsoft Office\root\Office16\EXCEL.exe"
+$appPath[$outlook] = "C:\Program Files\Microsoft Office\root\Office16\OUTLOOK.exe"
 
 ; Edge
 Global Enum $twitter, $facebook, $instagram, $nytimes, $google, $youtube, $hobbits, $rick
-Global Const $num_sites = 8
-Global $sites[$num_sites]
+Global $sites[8]
 $sites[$twitter]   = 'https://www.twitter.com'
 $sites[$facebook]  = 'https://www.facebook.com'
 $sites[$instagram] = 'https://www.instagram.com'
@@ -87,6 +86,7 @@ $sites[$google]    = 'https://www.google.com'
 $sites[$youtube]   = 'https://www.youtube.com'
 $sites[$hobbits]   = 'https://www.youtube.com/watch?v=uE-1RPDqJAY'
 $sites[$rick]      = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+Global $numSites = UBound($sites)
 
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -107,6 +107,11 @@ Main()
 
 ; Main Code
 Func Main()
+	Local $search
+
+	DirRemove($workDir, 1)
+	DirCreate($workDir)
+
 	If $enableGUI Then
 		$fDebug  = GUICreate("NotARobot", 143, 78, -1, -1, Default, BitOr($WS_EX_TOPMOST, $WS_EX_TOOLWINDOW))
 		$lAction = GUICtrlCreateLabel("Idle", 27, 2, 94, 37, $SS_CENTER)
@@ -121,16 +126,9 @@ Func Main()
 		GUISetState(@SW_SHOW)
 	EndIf
 
-	DirRemove($workDir, 1)
-	DirCreate($workDir)
 	While 1
-		; Randomize running or closing app
-		$randomWin = Random(0,($numApps - 1),1)
-		If Not IsHWnd($listWin[$randomWin]) Then
-			$ExecApp[$randomWin]()
-		Else
-			CloseApp($listWin[$randomWin])
-		EndIf
+		; Run or close an app
+		$ExecApp[Random(0,($numApps-1),1)]()
 
 		; 10% chance to exit the simulation
 		If Random(0,99,1) >= 90 Then
@@ -138,15 +136,15 @@ Func Main()
 		EndIf
 
 		; Wait from 3 seconds to 15 minutes
-;~ 		TrapSleep(Random(3*$seconds,15*$minutes,1), True)
-		TrapSleep(5000, True)
+		TrapSleep(Random(3*$seconds,15*$minutes,1), True)
+;~ 		TrapSleep(5000, True) ;Debug
 	WEnd
 EndFunc
 
 ; Exit closing all apps
 Func Quit($ret = 0)
-	For $w = 0 To ($numApps - 1)
-		CloseApp($listWin[$w])
+	For $w = 0 To (UBound($runningApps) - 1)
+		CloseApp($runningApps[$w][0])
 	Next
 	If @HotKeyPressed == $hotkey Then
 		Exit 2
@@ -157,9 +155,16 @@ EndFunc
 
 ; Close an app by handle
 Func CloseApp($handle)
-   If IsHWnd($handle) Then
-	  WinKill($handle)
-   EndIf
+	Local $pos = _ArraySearch($runningApps, $handle)
+	If IsHWnd($handle) Then
+		WinKill($handle)
+		If UBound($runningApps) > 1 Then
+			_ArrayDelete($runningApps, $pos)
+		Else
+			$runningApps[0][0] = "None"
+			$runningApps[0][1] = "None"
+		EndIf
+	EndIf
 EndFunc
 
 ; Show Current App on GUI
@@ -207,7 +212,7 @@ Func TrapSleep($delay, $show = False)
 	Until $countdown <= 0
 
 	If $enableGUI And $show Then
-		ShowCurrentApp("Running", $labelApps[$randomWin])
+		ShowCurrentApp("Running", $currentApp)
 	EndIf
 EndFunc
 
@@ -245,32 +250,60 @@ Func fOpenDir ($fullpath)
 	Return WinGetHandle(WinGetTitle("[ACTIVE]"))
 EndFunc
 
-; Open App via Explorer
-Func fOpenApp($fullpath)
+; Split path string
+Func fSplitPath($fullpath)
 	Local $split[5]
 	_PathSplit($fullpath, $split[1], $split[2], $split[3], $split[4])
+
+	Return $split
+EndFunc
+
+; Open App via Explorer
+Func fOpenApp($fullpath)
+	Local $split = fSplitPath($fullpath)
 	Local $path   = $split[1] & $split[2]
 	Local $target = $split[3] & $split[4]
-	Local $win = fOpenDir($path)
+	$currentApp = StringLower($split[3])
+	If _ArraySearch($runningApps, $currentApp) <> -1 Then
+		Local $pos = _ArraySearch($runningApps, $currentApp)
+		CloseApp($runningApps[$pos][0])
+		Return False
+	EndIf
 
 	; Run desired program and kill Explorer
-	TrapSend($target)
+	Local $win = fOpenDir($path)
+
+	Send("!d{RIGHT}")
+	TrapSend('\' & $target)
 	Send("{ENTER}")
-	ShowCurrentApp("Running", $labelApps[$randomWin])
+	ShowCurrentApp("Running", $currentApp)
 	While 1
 		If WinWaitNotActive($win) Then
 			WinKill($win)
 			ExitLoop
 		EndIf
     WEnd
-	$listWin[$randomWin] = WinGetHandle(WinGetTitle("[ACTIVE]"))
+
+	; Add window to the array
+	If $runningApps[0][0] == "None" Then
+		$runningApps[0][0] = WinGetHandle(WinGetTitle("[ACTIVE]"))
+		$runningApps[0][1] = $currentApp
+	Else
+		Local $iRows = UBound($runningApps, $UBOUND_ROWS)
+		Local $iCols = UBound($runningApps, $UBOUND_COLUMNS)
+
+		ReDim $runningApps[$iRows+1][$iCols]
+		$runningApps[$iRows][0] = WinGetHandle(WinGetTitle("[ACTIVE]"))
+		$runningApps[$iRows][1] = $currentApp
+	EndIf
+
+	Return True
 EndFunc
 
 ; Delete File via Explorer with Shift+Delete and confirms prompt.
 Func fDelete($fullpath = $workDir)
 	If FileExists($fullpath) = 1 Then
-		Local $split[5]
-		_PathSplit($fullpath, $split[1], $split[2], $split[3], $split[4])
+		Local $split = fSplitPath($fullpath)
 		Local $path   = $split[1] & $split[2]
 		Local $target = $split[3] & $split[4]
 		Local $win = fOpenDir($path)
@@ -280,10 +313,13 @@ Func fDelete($fullpath = $workDir)
 		Send("+{DEL}")
 		TrapSleep(2000)
 		Send("{ENTER}")
-		TrapSleep(2000)
 
-		WinKill($win)
-		TrapSleep(2000)
+		While 1
+			If WinWaitNotActive($win) Then
+				WinKill($win)
+				ExitLoop
+			EndIf
+		WEnd
 	EndIf
 EndFunc
 
@@ -295,7 +331,10 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;
 
 Func fCalc()
-    fOpenApp($pathCalc)
+	If Not fOpenApp($appPath[$calc]) Then
+		Return
+	EndIf
+
     Local $calc = ""
     Local $randomCalc = (Random(3,5,1)*2)-1
 
@@ -332,13 +371,16 @@ Func fNotepad()
 	Local $randomChoice  = Random(1,$actionOptions,1)
 
 	TrapSleep(2000)
-	If $listFiles[0] = 0 Or $randomChoice = 1 Then
-		; Open Notepad and create a random file
-		fOpenApp($pathNote)
-		fNotepadCreateFile()
+	If $filesCreated[0] = 0 Or $randomChoice = 1 Then
+		; Close Notepad OR open it and create a random file
+		If Not fOpenApp($appPath[$notepad]) Then
+			Return
+		Else
+			fNotepadCreateFile()
+		EndIf
 	Else
-		; Delete a random previously created file
-		fDelete($listFiles[Random(0,UBound($listFiles)-1,1)])
+		; Delete a random previously created file via Explorer
+		fDelete($filesCreated[Random(0,UBound($filesCreated)-1,1)])
 	EndIf
 EndFunc
 
@@ -349,18 +391,16 @@ Func fNotepadCreateFile()
 	EndIf
 
 	; Add to the files array
-	If $listFiles[0] = 0 Then
-		$listFiles[0] = $workDir & "\" & Random(999,9999999,1) & ".txt"
-	Else
-		ReDim $listFiles[UBound($listFiles)+1]
-		$listFiles[UBound($listFiles)-1] = $workDir & "\" & Random(999,9999999,1) & ".txt"
-	EndIf
+	Local $pos = ($filesCreated[0] = 0) ? 0 : UBound($filesCreated)
+	$filesCreated[$pos] = $workDir & "\" & Random(999,9999999,1) & ".txt"
+	ReDim $filesCreated[$pos+1]
+	$filesCreated[$pos] = $workDir & "\" & Random(999,9999999,1) & ".txt"
 
 	; Save via Notepad Save As menu
 	TrapSend(Random(999,9999999,1) & Random(999,9999999,1) & Random(999,9999999,1))
 	Send("{ENTER}" & "^S")
 	TrapSleep(1000)
-	TrapSend($listFiles[UBound($listFiles)-1])
+	TrapSend($filesCreated[UBound($filesCreated)-1])
 	Send("{ENTER}")
 EndFunc
 
@@ -372,12 +412,15 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;
 
 Func fEdge()
-	fOpenApp($pathEdge)
+	If Not fOpenApp($appPath[$edge]) Then
+		Return
+	EndIf
+
 	Local $rSite, $rSleep
-	Local $numRandomSites = Random(1,$num_sites,1)
+	Local $numRandomSites = Random(1,$numSites,1)
 	Local $tabs = 0
 	Do
-		$rSite = Random(0,($num_sites - 1),1)
+		$rSite = Random(0,($numSites - 1),1)
 
 		If $tabs > 0 Then
 			Send("^t")
@@ -419,7 +462,10 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;
 
 Func fWord()
-	fOpenApp($pathWord)
+	If Not fOpenApp($appPath[$word]) Then
+		Return
+	EndIf
+
 	TrapSleep(3000)
 	Send("{ENTER}")
 
@@ -436,7 +482,10 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;
 
 Func fExcel()
-	fOpenApp($pathExcel)
+	If Not fOpenApp($appPath[$excel]) Then
+		Return
+	EndIf
+
 	TrapSleep(3000)
 	Send("{ENTER}")
 
@@ -453,7 +502,9 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;
 
 Func fOutlook()
-	fOpenApp($pathMail)
+	If Not fOpenApp($appPath[$outlook]) Then
+		Return
+	EndIf
 
 ;	TODO:
 ;	- Create a random e-mail and send.
