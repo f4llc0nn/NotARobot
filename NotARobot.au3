@@ -1,6 +1,6 @@
 #NoTrayIcon
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Outfile_x64=NotARobot_v0.88beta.exe
+#AutoIt3Wrapper_Outfile_x64=NotARobot_v0.89-beta.exe
 #AutoIt3Wrapper_Compression=4
 #AutoIt3Wrapper_UseUpx=y
 #AutoIt3Wrapper_Res_ProductName=NotARobot
