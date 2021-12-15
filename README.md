@@ -8,8 +8,6 @@ Open Explorer and navigate into binary directory, then hit enters to open it (ch
 2) MS Office365 (Outlook, Word, Excel)
 3) Notepad
 4) Calc
-5) Snipping Tool
-
 
 ## Install
 Download compiled version from HERE or download AutoIT v3, do your changes and compile yourself into a binary file.
