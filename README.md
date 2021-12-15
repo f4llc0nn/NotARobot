@@ -1,13 +1,39 @@
 # NotARobot
 Emulate user activity randomly opening apps through Explorer to generate "legit noise" for EDR etc.
 
-## Features
+## Goal
+Be a solid, feature-rich and more natural* alternative to Sheepl, Invoke-UserSimulator and others.\
+\* _meaning it uses Explorer navigation instead of launchers and/or powershell etc._
+
+## Description
 Open Explorer and navigate into binary directory, then hit enters to open it (child process of explorer.exe, as natural as possible).\
-**Current software included:**
-1) MS Edge
-2) MS Office365 (Outlook, Word, Excel)
-3) Notepad
-4) Calc
+Then, it waits a random window of time and run another program (or kill one of the previously opened processes).
+
+**Current software included (Expand to see a Demo):**
+<details>
+  <summary>1) MS Edge</summary>
+
+![Edge Demo](https://github.com/0xleone/NotARobot/blob/main/Edge.gif)
+ 
+</details>
+<details>
+  <summary>2) MS Office365 (Outlook, Word, Excel)</summary>
+
+![Edge Word](https://github.com/0xleone/NotARobot/blob/main/Word.gif)
+ 
+</details>
+<details>
+  <summary>3) Notepad</summary>
+
+![Notepad Demo](https://github.com/0xleone/NotARobot/blob/main/Notepad.gif)
+ 
+</details>
+<details>
+  <summary>4) Calc</summary>
+
+![Calc Demo](https://github.com/0xleone/NotARobot/blob/main/Calc.gif)
+ 
+</details>
 
 ## Install
 Download compiled version from [here](https://github.com/0xleone/NotARobot/releases) or download AutoIT v3, do your changes and compile yourself into a binary file.
