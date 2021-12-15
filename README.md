@@ -52,7 +52,7 @@ The hotkey is **NOT** reliable since this project does a LOT of typing emulation
 • MS Edge: Page Layout: Custom: Disable both checkboxes. Background: Disabled; Content: Disabled.\
 • MS Office365's Outlook: E-mail pre-configured. Otherwise read and send e-mails will fail.\
 • MS Office365's Excel, MS Office365's Word: Nothing specific. It must open without any warnings or prompts and able to edit files (obviously don't use with read-only MS Office version)\
-• Notepad, Calc, SnippingTool: Native\
+• Notepad, Calc, SnippingTool: Native
 
 ## TODO:
 • Add Snipping Tool: Make a screenshot\
