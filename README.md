@@ -2,8 +2,7 @@
 Emulate user activity randomly opening apps through Explorer to generate "legit noise" for EDR etc.
 
 ## Features
-Open Explorer and navigate into binary directory, then hit enters to open it (child process of explorer.exe, as natural as possible).\
-**Current software included:**
+Open Explorer and navigate into binary directory, then hit enters to open it (child process of explorer.exe, as natural as possible). **Current software included:**
 1) MS Edge
 2) MS Office365 (Outlook, Word, Excel)
 3) Notepad
