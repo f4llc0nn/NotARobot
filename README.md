@@ -4,7 +4,8 @@ Emulate user activity randomly opening apps through Explorer to generate "legit 
 ## Goal
 Be a solid, feature-rich and more natural* alternative to Sheepl, Invoke-UserSimulator and others.\
 \* _meaning it uses Explorer navigation instead of launchers and/or powershell etc._\
-It probably still need some adjustments to avoid weird parent-child process events. **This is a working in progress. Check the release notes.**
+
+It probably still need some adjustments to avoid weird parent-child process events. _**This is a working in progress. Check the release notes.**_
 
 ## Description
 Open Explorer and navigate into binary directory, then hit enters to open it (child process of explorer.exe, as natural as possible).
