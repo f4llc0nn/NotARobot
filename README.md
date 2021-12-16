@@ -1,15 +1,21 @@
 # NotARobot
-Emulate user activity randomly opening apps through Explorer to generate "legit noise" for EDR etc.
+Emulate user activity randomly opening apps through Explorer to generate "legit noise" for EDR and any other log-type collection technology.
 
 ## Goal
 Be a solid, feature-rich and more natural* alternative to Sheepl, Invoke-UserSimulator and others.\
-\* _meaning it uses Explorer navigation instead of launchers and/or powershell etc._
+\* _meaning it uses Explorer navigation instead of launchers and/or powershell etc._\
+It probably still need some adjustments to avoid weird parent-child process events. **This is a working in progress. Check the release notes.**
 
 ## Description
-Open Explorer and navigate into binary directory, then hit enters to open it (child process of explorer.exe, as natural as possible).\
+Open Explorer and navigate into binary directory, then hit enters to open it (child process of explorer.exe, as natural as possible).
 Then, it waits a random window of time and run another program (or kill one of the previously opened processes).
 
-**Current software included (Expand to see a Demo):**
+Considerations: 
+1) All the routines that creates and deletes a file uses current user temp folder.
+2) All the pseudo random websites (for Edge) are in variables. Feel free to add/change them.
+3) I'll try to make some kind of portable library of functions to make it easy to add any application later on. Maybe explaining in the Wiki page so people can fork and contribute with more simulations.
+
+**Current software included (Expand to see a Demo and TODO):**
 <details>
   <summary>1) MS Edge</summary>
 
@@ -18,7 +24,7 @@ Then, it waits a random window of time and run another program (or kill one of t
 </details>
 <details>
   <summary>2) MS Office365 (Outlook, Word, Excel)</summary>
-
+  
 ![Edge Word](https://github.com/0xleone/NotARobot/blob/main/Word.gif)
  
 </details>
@@ -32,7 +38,7 @@ Then, it waits a random window of time and run another program (or kill one of t
   <summary>4) Calc</summary>
 
 ![Calc Demo](https://github.com/0xleone/NotARobot/blob/main/Calc.gif)
- 
+
 </details>
 
 ## Install
@@ -58,5 +64,5 @@ The hotkey is **NOT** reliable since this project does a LOT of typing emulation
 • Add Snipping Tool: Make a screenshot\
 • Word/Excel: Create a random file\
 • Word/Excel: Delete a random created file\
-• Outlook sending random e-mail to itself and/or to a disposable e-mail (e.g. 10MinuteMail.com)\
+• Outlook sending random e-mail to itself and/or to a disposable e-mail (e.g. temp-mail.org, 10minutemail.com)\
 • Outlook opening random e-mail and attachments
