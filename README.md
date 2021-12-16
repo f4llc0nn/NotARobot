@@ -42,6 +42,14 @@ Considerations:
 
 </details>
 
+## Requirements:
+• OS: Win10\
+• Win10: Power & Sleep settings: Never/Never\
+• MS Edge: Page Layout: Custom: Disable both checkboxes. Background: Disabled; Content: Disabled.\
+• MS Office365's Outlook: E-mail pre-configured. Otherwise read and send e-mails will fail.\
+• MS Office365's Excel, MS Office365's Word: Nothing specific. It must open without any warnings or prompts and able to edit files (obviously don't use with read-only MS Office version)\
+• Notepad, Calc, SnippingTool: Native
+
 ## Install
 Download compiled version from [here](https://github.com/0xleone/NotARobot/releases) or download AutoIT v3, do your changes and compile yourself into a binary file.
 
@@ -53,15 +61,7 @@ If you want to force closing it, you can:
 
 The hotkey is **NOT** reliable since this project does a LOT of typing emulation and it can fail triggering the hotkey function.
 
-## Requirements:
-• OS: Win10\
-• Win10: Power & Sleep settings: Never/Never\
-• MS Edge: Page Layout: Custom: Disable both checkboxes. Background: Disabled; Content: Disabled.\
-• MS Office365's Outlook: E-mail pre-configured. Otherwise read and send e-mails will fail.\
-• MS Office365's Excel, MS Office365's Word: Nothing specific. It must open without any warnings or prompts and able to edit files (obviously don't use with read-only MS Office version)\
-• Notepad, Calc, SnippingTool: Native
-
-## TODO:
+## CURRENT TODO (DEC/2021):
 • Add Snipping Tool: Make a screenshot\
 • Word/Excel: Create a random file\
 • Word/Excel: Delete a random created file\
