@@ -1,23 +1,24 @@
 #NoTrayIcon
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Outfile_x64=NotARobot_v0.89-beta.exe
+#AutoIt3Wrapper_Outfile_x64=NotARobot_v0.93-beta.exe
 #AutoIt3Wrapper_Compression=4
 #AutoIt3Wrapper_UseUpx=y
 #AutoIt3Wrapper_Res_ProductName=NotARobot
-#AutoIt3Wrapper_Res_ProductVersion=0.89
+#AutoIt3Wrapper_Res_ProductVersion=0.93-beta
 #AutoIt3Wrapper_Res_Language=1033
+#AutoIt3Wrapper_Add_Constants=n
 #AutoIt3Wrapper_Run_Au3Stripper=y
 #Au3Stripper_Parameters=/pe /sf /sv /mo /rm
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-; *** Start added by AutoIt3Wrapper ***
-#include <AutoItConstants.au3>
-; *** End added by AutoIt3Wrapper ***
 #include <Array.au3>
+#include <AutoItConstants.au3>
 #include <Constants.au3>
 #include <File.au3>
+#include <FileConstants.au3>
 #include <GUIConstantsEx.au3>
 #include <MsgBoxConstants.au3>
 #include <StaticConstants.au3>
+#include <StringConstants.au3>
 #include <Timers.au3>
 #include <WindowsConstants.au3>
 
@@ -59,19 +60,17 @@
 
 Global $hotkey = "+{ESC}"
 HotKeySet($hotkey, "Quit") 						; SHIFT+ESC to quit
-Global Const $typingSpeed = 75					; Typing delay between chars
-AutoItSetOption("SendKeyDelay", $typingSpeed)
-Global Const $enableGUI = True					; Enable/Disable debug screen
-Global Const $workDir = @TempDir & '\NotARobot'	; Guarantee directory permission no matter the user running this.
-Global $minutes = 60000
-Global $seconds = 1000
+Global $typingDelay = 50						; Typing delay between chars
+AutoItSetOption("SendKeyDelay", $typingDelay)
+Global $enableGUI = True						; Enable/Disable debug screen
+Global $workDir = @TempDir & '\NotARobot'		; Guarantee directory permission no matter the user running this.
 
-Global $runningApps[][]  = [["None", "None"]]	; Array of app handles and names for easy exiting
-Global $filesCreated[] = ["None"]				; Dynamic array - increases for each file created
+Global $runningApps[][]  = [[0, 0]]				; Array of app handles and names for easy exiting
+Global $filesCreated[] = [0]					; Dynamic array - increases for each file created
 Global $fDebug, $lAction, $lInfo				; GUI
 Global $currentApp = 0							; Dynamic label of current app running
-Global $ExecApp[]   = [ fCalc, fNotepad, fEdge, fWord, fExcel, fOutlook ]
-Global $numApps = UBound($ExecApp)				; Self-explanatory
+Global $ExecApp[] = [0]
+Global $sites[] = ['https://www.google.com']
 
 ;;;;;;;;;;;;;;;;;;;;
 ;
@@ -79,28 +78,13 @@ Global $numApps = UBound($ExecApp)				; Self-explanatory
 ;
 ;;;;;;;;;;;;;;;;;;;;
 
-Global Enum $calc, $notepad, $edge, $word, $excel, $outlook, $appListSize
-Global $appPath[$appListSize]
-$appPath[$calc]    = "C:\Windows\System32\calc.exe"
-$appPath[$notepad] = "C:\Windows\System32\notepad.exe"
-$appPath[$edge]    = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-$appPath[$word]    = "C:\Program Files\Microsoft Office\root\Office16\WINWORD.exe"
-$appPath[$excel]   = "C:\Program Files\Microsoft Office\root\Office16\EXCEL.exe"
-$appPath[$outlook] = "C:\Program Files\Microsoft Office\root\Office16\OUTLOOK.exe"
-
-; Edge
-Global Enum $twitter, $facebook, $instagram, $nytimes, $google, $youtube, $hobbits, $rick
-Global $sites[8]
-$sites[$twitter]   = 'https://www.twitter.com'
-$sites[$facebook]  = 'https://www.facebook.com'
-$sites[$instagram] = 'https://www.instagram.com'
-$sites[$nytimes]   = 'https://www.nytimes.com'
-$sites[$google]    = 'https://www.google.com'
-$sites[$youtube]   = 'https://www.youtube.com'
-$sites[$hobbits]   = 'https://www.youtube.com/watch?v=uE-1RPDqJAY'
-$sites[$rick]      = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
-Global $numSites = UBound($sites)
-
+Global $calc     = "C:\Windows\System32\calc.exe"
+Global $notepad  = "C:\Windows\System32\notepad.exe"
+Global $edge     = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+Global $word     = "C:\Program Files\Microsoft Office\root\Office16\WINWORD.exe"
+Global $excel    = "C:\Program Files\Microsoft Office\root\Office16\EXCEL.exe"
+Global $outlook  = "C:\Program Files\Microsoft Office\root\Office16\OUTLOOK.exe"
+Global $snipTool = "C:\Windows\System32\SnippingTool.exe"
 
 ;;;;;;;;;;;;;;;;;;;;
 ;
@@ -122,6 +106,7 @@ Main()
 Func Main()
 	Local $search
 
+	fLoadConfig()
 	DirRemove($workDir, 1)
 	DirCreate($workDir)
 
@@ -139,9 +124,11 @@ Func Main()
 		GUISetState(@SW_SHOW)
 	EndIf
 
+	Local $minutes = 60000
+	Local $seconds = 1000
 	While 1
 		; Run or close an app
-		$ExecApp[Random(0,($numApps-1),1)]()
+		$ExecApp[Random(0,(UBound($ExecApp)-1),1)]()
 
 		; 10% chance to exit the simulation
 		If Random(0,99,1) >= 90 Then
@@ -153,9 +140,163 @@ Func Main()
 	WEnd
 EndFunc
 
+; Dynamic read config.ini file.
+Func fLoadConfig()
+	Local $configFilePath = (@Compiled = 1) ? fSplitPath(@AutoItExe)[1] & fSplitPath(@AutoItExe)[2] : @ScriptDir & "\"
+	Local $handleFileOpen = FileOpen($configFilePath & 'config.ini', $FO_READ)
+
+	; Open File and Test
+	If $handleFileOpen = -1 Then
+		MsgBox($MB_SYSTEMMODAL, "NotARobot", "Please create a config file.")
+		Exit 1
+	EndIf
+
+	; Read the contents of the file using the handle returned by FileOpen.
+	Local $configFile = FileReadToArray($handleFileOpen)
+	If @error Then
+		MsgBox($MB_SYSTEMMODAL, "NotARobot", "There was an error reading config file. @error: " & @error)
+		Exit 1
+	Else
+		Local $line, $attr, $value, $pos
+		For $i = 0 To UBound($configFile) - 1
+			$line = StringStripWS($configFile[$i], $STR_STRIPALL)
+			If $line == "" Or StringInStr($line, '[') <> 0 Or StringInStr($line, ']') <> 0 Then
+				ContinueLoop
+			EndIf
+
+			$attr  = StringSplit($line, "=", $STR_NOCOUNT)[0]
+			$value = StringSplit($line, "=", $STR_NOCOUNT)[1]
+			If StringSplit($line, "=")[0] > 2 Then
+				For $i = 2 To (StringSplit($line, "=")[0] - 1)
+					$value &= "=" & StringSplit($line, "=", $STR_NOCOUNT)[$i]
+				Next
+			EndIf
+
+			Switch StringLower($attr)
+				Case "typingdelay"
+					If StringIsInt($value) And $value < 1000 Then
+						$typingDelay = ($value <= 5) ? 5 : $value
+					EndIf
+					AutoItSetOption("SendKeyDelay", $typingDelay)
+					ContinueLoop
+				Case "hotkey"
+					$hotkey = $value
+					HotKeySet($hotkey, "Quit")
+					ContinueLoop
+				Case "enableGUI"
+					If $value = 1 Then
+						$enableGUI = True
+					ElseIf $value = 0 Then
+						$enableGUI = False
+					EndIf
+					ContinueLoop
+				Case "enableCalc"
+					If $value = 1 Then
+						$pos = ($ExecApp[0] = 0) ? 0 : UBound($ExecApp)
+						If $pos > 0 Then
+							ReDim $ExecApp[$pos+1]
+						EndIf
+						$ExecApp[$pos] = fCalc
+					EndIf
+					ContinueLoop
+				Case "enableNotepad"
+					If $value = 1 Then
+						$pos = ($ExecApp[0] = 0) ? 0 : UBound($ExecApp)
+						If $pos > 0 Then
+							ReDim $ExecApp[$pos+1]
+						EndIf
+						$ExecApp[$pos] = fNotepad
+					EndIf
+					ContinueLoop
+				Case "enableEdge"
+					If $value = 1 Then
+						$pos = ($ExecApp[0] = 0) ? 0 : UBound($ExecApp)
+						If $pos > 0 Then
+							ReDim $ExecApp[$pos+1]
+						EndIf
+						$ExecApp[$pos] = fEdge
+					EndIf
+					ContinueLoop
+				Case "enableWord"
+					If $value = 1 Then
+						$pos = ($ExecApp[0] = 0) ? 0 : UBound($ExecApp)
+						If $pos > 0 Then
+							ReDim $ExecApp[$pos+1]
+						EndIf
+						$ExecApp[$pos] = fWord
+					EndIf
+					ContinueLoop
+				Case "enableExcel"
+					If $value = 1 Then
+						$pos = ($ExecApp[0] = 0) ? 0 : UBound($ExecApp)
+						If $pos > 0 Then
+							ReDim $ExecApp[$pos+1]
+						EndIf
+						$ExecApp[$pos] = fExcel
+					EndIf
+					ContinueLoop
+				Case "enableOutlook"
+					If $value = 1 Then
+						$pos = ($ExecApp[0] = 0) ? 0 : UBound($ExecApp)
+						If $pos > 0 Then
+							ReDim $ExecApp[$pos+1]
+						EndIf
+						$ExecApp[$pos] = fOutlook
+					EndIf
+					ContinueLoop
+				Case "enableSnippingTool"
+					If $value = 1 Then
+						$pos = ($ExecApp[0] = 0) ? 0 : UBound($ExecApp)
+						If $pos > 0 Then
+							ReDim $ExecApp[$pos+1]
+						EndIf
+						$ExecApp[$pos] = fSnipTool
+					EndIf
+					ContinueLoop
+				Case "calc"
+					$calc     = (FileExists($value) = 1) ? $value : $calc
+					ContinueLoop
+				Case "notepad"
+					$notepad  = (FileExists($value) = 1) ? $value : $notepad
+					ContinueLoop
+				Case "edge"
+					$edge     = (FileExists($value) = 1) ? $value : $edge
+					ContinueLoop
+				Case "word"
+					$word     = (FileExists($value) = 1) ? $value : $word
+					ContinueLoop
+				Case "excel"
+					$excel    = (FileExists($value) = 1) ? $value : $excel
+					ContinueLoop
+				Case "outlook"
+					$outlook  = (FileExists($value) = 1) ? $value : $outlook
+					ContinueLoop
+				Case "snippingtool"
+					$snipTool = (FileExists($value) = 1) ? $value : $snipTool
+					ContinueLoop
+				Case "site"
+					$pos = UBound($sites)
+					ReDim $sites[$pos+1]
+					$sites[$pos] = $value
+					ContinueLoop
+			EndSwitch
+		Next
+	EndIf
+
+	; Close the handle returned by FileOpen.
+	FileClose($handleFileOpen)
+EndFunc
+
 ; Exit closing all apps
 Func Quit($ret = 0)
-	For $w = 0 To (UBound($runningApps) - 1)
+	; If no current running apps, just finish this script
+	Local $apps = ($runningApps[0][0] = 0) ? -1 : (UBound($runningApps) - 1)
+	If $apps = -1 Then
+		Exit $ret
+	EndIf
+
+	; Else, close all apps
+	For $w = 0 To $apps
 		CloseApp($runningApps[$w][0])
 	Next
 	If @HotKeyPressed == $hotkey Then
@@ -173,8 +314,8 @@ Func CloseApp($handle)
 		If UBound($runningApps) > 1 Then
 			_ArrayDelete($runningApps, $pos)
 		Else
-			$runningApps[0][0] = "None"
-			$runningApps[0][1] = "None"
+			$runningApps[0][0] = 0
+			$runningApps[0][1] = 0
 		EndIf
 	EndIf
 EndFunc
@@ -240,10 +381,18 @@ Func TrapSend($keys)
 			ElseIf @HotKeyPressed == $hotkey Then
 				Quit(2)
 			EndIf
-		Until TimerDiff($tBegin) > $typingSpeed
+		Until TimerDiff($tBegin) > $typingDelay
 		Send($charArray[$i])
 	Next
-	AutoItSetOption("SendKeyDelay", $typingSpeed)
+	AutoItSetOption("SendKeyDelay", $typingDelay)
+EndFunc
+
+; Split path string
+Func fSplitPath($fullpath)
+	Local $split[5]
+	_PathSplit($fullpath, $split[1], $split[2], $split[3], $split[4])
+
+	Return $split
 EndFunc
 
 ; Open Explorer and navigate to desired directory
@@ -262,54 +411,42 @@ Func fOpenDir ($fullpath)
 	Return WinGetHandle(WinGetTitle("[ACTIVE]"))
 EndFunc
 
-; Split path string
-Func fSplitPath($fullpath)
-	Local $split[5]
-	_PathSplit($fullpath, $split[1], $split[2], $split[3], $split[4])
-
-	Return $split
-EndFunc
-
 ; Open App via Explorer
 Func fOpenApp($fullpath)
 	Local $split = fSplitPath($fullpath)
 	Local $path   = $split[1] & $split[2]
 	Local $target = $split[3] & $split[4]
 	$currentApp = StringLower($split[3])
-	If _ArraySearch($runningApps, $currentApp) <> -1 Then
-		Local $pos = _ArraySearch($runningApps, $currentApp)
+	Local $pos = _ArraySearch($runningApps, $currentApp)
+	If $runningApps[0][0] = 0 Or ($pos = -1 And @error = 6) Then
+		; Run desired program and kill Explorer
+		Local $win = fOpenDir($path)
+
+		Send("!d{RIGHT}")
+		TrapSend('\' & $target)
+		Send("{ENTER}")
+		ShowCurrentApp("Running", $currentApp)
+		While 1
+			If WinWaitNotActive($win) Then
+				WinKill($win)
+				ExitLoop
+			EndIf
+		WEnd
+
+		; Add window to the array
+		Local $row = ($runningApps[0][0] = 0) ? 0 : UBound($runningApps, $UBOUND_ROWS)
+		Local $columns = UBound($runningApps, $UBOUND_COLUMNS)
+
+		ReDim $runningApps[$row+1][$columns]
+		$runningApps[$row][0] = WinGetHandle(WinGetTitle("[ACTIVE]"))
+		$runningApps[$row][1] = $currentApp
+
+		Return True
+	Else
 		CloseApp($runningApps[$pos][0])
 		Return False
 	EndIf
 
-	; Run desired program and kill Explorer
-	Local $win = fOpenDir($path)
-
-	Send("!d{RIGHT}")
-	TrapSend('\' & $target)
-	Send("{ENTER}")
-	ShowCurrentApp("Running", $currentApp)
-	While 1
-		If WinWaitNotActive($win) Then
-			WinKill($win)
-			ExitLoop
-		EndIf
-    WEnd
-
-	; Add window to the array
-	If $runningApps[0][0] == "None" Then
-		$runningApps[0][0] = WinGetHandle(WinGetTitle("[ACTIVE]"))
-		$runningApps[0][1] = $currentApp
-	Else
-		Local $iRows = UBound($runningApps, $UBOUND_ROWS)
-		Local $iCols = UBound($runningApps, $UBOUND_COLUMNS)
-
-		ReDim $runningApps[$iRows+1][$iCols]
-		$runningApps[$iRows][0] = WinGetHandle(WinGetTitle("[ACTIVE]"))
-		$runningApps[$iRows][1] = $currentApp
-	EndIf
-
-	Return True
 EndFunc
 
 ; Delete File via Explorer with Shift+Delete and confirms prompt.
@@ -338,43 +475,43 @@ EndFunc
 
 ;;;;;;;;;;;;;;;;;;;;
 ;
-; Calc.exe
+; Calc
 ;
 ;;;;;;;;;;;;;;;;;;;;
 
 Func fCalc()
-	If Not fOpenApp($appPath[$calc]) Then
+	If Not fOpenApp($calc) Then
 		Return
 	EndIf
 
-    Local $calc = ""
+    Local $c = ""
     Local $randomCalc = (Random(3,5,1)*2)-1
 
     For $i = 0 To $randomCalc
 	    If $i = 0 Or Mod($i,2) <> 0 Then
-		    $calc &= Random(1,9,1)
+		    $c &= Random(1,9,1)
 	    Else
 			Switch Random(0,3,1)
 				Case 0
-					$calc &= "+"
+					$c &= "+"
 				Case 1
-					$calc &= "-"
+					$c &= "-"
 				Case 2
-					$calc &= "*"
+					$c &= "*"
 				Case 3
-					$calc &= "/"
+					$c &= "/"
 		    EndSwitch
 	    EndIf
     Next
 
-    $calc &= "="
-	TrapSend($calc)
+    $c &= "="
+	TrapSend($c)
 EndFunc
 
 
 ;;;;;;;;;;;;;;;;;;;;
 ;
-; Notepad.exe
+; Notepad
 ;
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -385,7 +522,7 @@ Func fNotepad()
 	TrapSleep(2000)
 	If $filesCreated[0] = 0 Or $randomChoice = 1 Then
 		; Close Notepad OR open it and create a random file
-		If Not fOpenApp($appPath[$notepad]) Then
+		If Not fOpenApp($notepad) Then
 			Return
 		Else
 			fNotepadCreateFile()
@@ -404,15 +541,48 @@ Func fNotepadCreateFile()
 
 	; Add to the files array
 	Local $pos = ($filesCreated[0] = 0) ? 0 : UBound($filesCreated)
-	$filesCreated[$pos] = $workDir & "\" & Random(999,9999999,1) & ".txt"
-	ReDim $filesCreated[$pos+1]
+	If $pos > 0 Then
+		ReDim $filesCreated[$pos+1]
+	EndIf
 	$filesCreated[$pos] = $workDir & "\" & Random(999,9999999,1) & ".txt"
 
 	; Save via Notepad Save As menu
 	TrapSend(Random(999,9999999,1) & Random(999,9999999,1) & Random(999,9999999,1))
 	Send("{ENTER}" & "^S")
 	TrapSleep(1000)
-	TrapSend($filesCreated[UBound($filesCreated)-1])
+	TrapSend($filesCreated[$pos])
+	Send("{ENTER}")
+EndFunc
+
+
+;;;;;;;;;;;;;;;;;;;;
+;
+; SnippingTool
+;
+;;;;;;;;;;;;;;;;;;;;
+
+Func fSnipTool()
+	If Not fOpenApp($snipTool) Then
+		Return
+	EndIf
+
+	; Take screenshot
+	TrapSend("!m")
+	Sleep(200)
+	TrapSend("s")
+	TrapSleep(1000)
+
+	; Add screenshot to the files array
+	Local $pos = ($filesCreated[0] = 0) ? 0 : UBound($filesCreated)
+	If $pos > 0 Then
+		ReDim $filesCreated[$pos+1]
+	EndIf
+	$filesCreated[$pos] = $workDir & "\" & Random(999,9999999,1) & ".png"
+
+	; Save screenshot in workDir
+	Send("^s")
+	TrapSleep(1000)
+	TrapSend($filesCreated[$pos])
 	Send("{ENTER}")
 EndFunc
 
@@ -424,15 +594,15 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;
 
 Func fEdge()
-	If Not fOpenApp($appPath[$edge]) Then
+	If Not fOpenApp($edge) Then
 		Return
 	EndIf
 
 	Local $rSite, $rSleep
-	Local $numRandomSites = Random(1,$numSites,1)
+	Local $numRandomSites = Random(1,UBound($sites),1)
 	Local $tabs = 0
 	Do
-		$rSite = Random(0,($numSites - 1),1)
+		$rSite = Random(0,(UBound($sites)-1),1)
 
 		If $tabs > 0 Then
 			Send("^t")
@@ -442,7 +612,7 @@ Func fEdge()
 		TrapSend($sites[$rSite])
 		Send("{ENTER}")
 
-		If $rSite == $google Then
+		If $rSite == 0 Then
 			TrapSleep(1000)
 			TrapSend(Random(99,999999,1))
 			Send("{ENTER}")
@@ -474,7 +644,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;
 
 Func fWord()
-	If Not fOpenApp($appPath[$word]) Then
+	If Not fOpenApp($word) Then
 		Return
 	EndIf
 
@@ -494,7 +664,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;
 
 Func fExcel()
-	If Not fOpenApp($appPath[$excel]) Then
+	If Not fOpenApp($excel) Then
 		Return
 	EndIf
 
@@ -514,7 +684,7 @@ EndFunc
 ;;;;;;;;;;;;;;;;;;;;
 
 Func fOutlook()
-	If Not fOpenApp($appPath[$outlook]) Then
+	If Not fOpenApp($outlook) Then
 		Return
 	EndIf
 
