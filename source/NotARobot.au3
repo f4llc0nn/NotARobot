@@ -1,10 +1,10 @@
 #NoTrayIcon
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Outfile_x64=NotARobot_v0.93-beta.exe
+#AutoIt3Wrapper_Outfile_x64=NotARobot_v0.94-beta.exe
 #AutoIt3Wrapper_Compression=4
 #AutoIt3Wrapper_UseUpx=y
 #AutoIt3Wrapper_Res_ProductName=NotARobot
-#AutoIt3Wrapper_Res_ProductVersion=0.93-beta
+#AutoIt3Wrapper_Res_ProductVersion=0.94-beta
 #AutoIt3Wrapper_Res_Language=1033
 #AutoIt3Wrapper_Add_Constants=n
 #AutoIt3Wrapper_Run_Au3Stripper=y
@@ -59,18 +59,19 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 Global $hotkey = "+{ESC}"
-HotKeySet($hotkey, "Quit") 						; SHIFT+ESC to quit
-Global $typingDelay = 50						; Typing delay between chars
+HotKeySet($hotkey, "Quit")                     ; SHIFT+ESC to quit
+Global $typingDelay = 50                       ; Typing delay between chars
 AutoItSetOption("SendKeyDelay", $typingDelay)
-Global $enableGUI = True						; Enable/Disable debug screen
-Global $workDir = @TempDir & '\NotARobot'		; Guarantee directory permission no matter the user running this.
+Global $enableGUI = True                       ; Enable/Disable debug screen
+Global $workDir = @TempDir & '\NotARobot'      ; Guarantee directory permission no matter the user running this.
+Global $randomWindow = 15                      ; Range between 3 seconds and X Minutes between executions
 
-Global $runningApps[][]  = [[0, 0]]				; Array of app handles and names for easy exiting
-Global $filesCreated[] = [0]					; Dynamic array - increases for each file created
-Global $fDebug, $lAction, $lInfo				; GUI
-Global $currentApp = 0							; Dynamic label of current app running
-Global $ExecApp[] = [0]
-Global $sites[] = ['https://www.google.com']
+Global $runningApps[][] = [[0, 0]]             ; Array of app handles and names for easy exiting
+Global $filesCreated[] = [0]                   ; Dynamic array - increases for each file created
+Global $fDebug, $lAction, $lInfo               ; GUI
+Global $currentApp = 0                         ; Dynamic label of current app running
+Global $ExecApp[] = [0]                        ; Dynamic list of apps
+Global $sites[] = ['https://www.google.com']   ; Sites to open via browser; Minimum is random Google search (built-in)
 
 ;;;;;;;;;;;;;;;;;;;;
 ;
@@ -107,9 +108,6 @@ Func Main()
 	Local $search
 
 	fLoadConfig()
-	DirRemove($workDir, 1)
-	DirCreate($workDir)
-
 	If $enableGUI Then
 		$fDebug  = GUICreate("NotARobot", 143, 78, -1, -1, Default, BitOr($WS_EX_TOPMOST, $WS_EX_TOOLWINDOW))
 		$lAction = GUICtrlCreateLabel("Idle", 27, 2, 94, 37, $SS_CENTER)
@@ -136,7 +134,7 @@ Func Main()
 		EndIf
 
 		; Wait from 3 seconds to 15 minutes
-		TrapSleep(Random(3*$seconds,15*$minutes,1), True)
+		TrapSleep(Random(3*$seconds,$randomWindow*$minutes,1), True)
 	WEnd
 EndFunc
 
@@ -157,40 +155,41 @@ Func fLoadConfig()
 		MsgBox($MB_SYSTEMMODAL, "NotARobot", "There was an error reading config file. @error: " & @error)
 		Exit 1
 	Else
-		Local $line, $attr, $value, $pos
-		For $i = 0 To UBound($configFile) - 1
-			$line = StringStripWS($configFile[$i], $STR_STRIPALL)
-			If $line == "" Or StringInStr($line, '[') <> 0 Or StringInStr($line, ']') <> 0 Then
+		Local $line, $key, $value, $pos
+		For $line = 0 To (UBound($configFile) - 1)
+			$keyvalue = StringSplit($configFile[$line], ';', $STR_NOCOUNT)[0]
+			If $keyvalue == "" Or StringInStr($keyvalue, '[') <> 0 Or StringInStr($keyvalue, ']') <> 0 Then
 				ContinueLoop
 			EndIf
 
-			$attr  = StringSplit($line, "=", $STR_NOCOUNT)[0]
-			$value = StringSplit($line, "=", $STR_NOCOUNT)[1]
-			If StringSplit($line, "=")[0] > 2 Then
-				For $i = 2 To (StringSplit($line, "=")[0] - 1)
-					$value &= "=" & StringSplit($line, "=", $STR_NOCOUNT)[$i]
-				Next
-			EndIf
-
-			Switch StringLower($attr)
+			$key   = StringStripWS(StringSplit($keyvalue, "=", $STR_NOCOUNT)[0], BitOr($STR_STRIPLEADING, $STR_STRIPTRAILING))
+			$value = StringStripWS(StringTrimLeft($keyvalue, StringLen($key)+1), BitOr($STR_STRIPLEADING, $STR_STRIPTRAILING))
+			Switch StringLower($key)
 				Case "typingdelay"
 					If StringIsInt($value) And $value < 1000 Then
 						$typingDelay = ($value <= 5) ? 5 : $value
 					EndIf
 					AutoItSetOption("SendKeyDelay", $typingDelay)
 					ContinueLoop
-				Case "hotkey"
-					$hotkey = $value
-					HotKeySet($hotkey, "Quit")
-					ContinueLoop
-				Case "enableGUI"
+				Case "enablegui"
 					If $value = 1 Then
 						$enableGUI = True
 					ElseIf $value = 0 Then
 						$enableGUI = False
 					EndIf
 					ContinueLoop
-				Case "enableCalc"
+				Case "randomwindowminutes"
+					If StringIsInt($value) Then
+						$randomWindow = $value
+					EndIf
+					ContinueLoop
+				Case "workdir"
+					DirCreate($value)
+					If FileExists($value) = 1 Then
+						$workDir = $value
+					EndIf
+					ContinueLoop
+				Case "enablecalc"
 					If $value = 1 Then
 						$pos = ($ExecApp[0] = 0) ? 0 : UBound($ExecApp)
 						If $pos > 0 Then
@@ -199,7 +198,7 @@ Func fLoadConfig()
 						$ExecApp[$pos] = fCalc
 					EndIf
 					ContinueLoop
-				Case "enableNotepad"
+				Case "enablenotepad"
 					If $value = 1 Then
 						$pos = ($ExecApp[0] = 0) ? 0 : UBound($ExecApp)
 						If $pos > 0 Then
@@ -208,7 +207,7 @@ Func fLoadConfig()
 						$ExecApp[$pos] = fNotepad
 					EndIf
 					ContinueLoop
-				Case "enableEdge"
+				Case "enableedge"
 					If $value = 1 Then
 						$pos = ($ExecApp[0] = 0) ? 0 : UBound($ExecApp)
 						If $pos > 0 Then
@@ -217,7 +216,7 @@ Func fLoadConfig()
 						$ExecApp[$pos] = fEdge
 					EndIf
 					ContinueLoop
-				Case "enableWord"
+				Case "enableword"
 					If $value = 1 Then
 						$pos = ($ExecApp[0] = 0) ? 0 : UBound($ExecApp)
 						If $pos > 0 Then
@@ -226,7 +225,7 @@ Func fLoadConfig()
 						$ExecApp[$pos] = fWord
 					EndIf
 					ContinueLoop
-				Case "enableExcel"
+				Case "enableexcel"
 					If $value = 1 Then
 						$pos = ($ExecApp[0] = 0) ? 0 : UBound($ExecApp)
 						If $pos > 0 Then
@@ -235,7 +234,7 @@ Func fLoadConfig()
 						$ExecApp[$pos] = fExcel
 					EndIf
 					ContinueLoop
-				Case "enableOutlook"
+				Case "enableoutlook"
 					If $value = 1 Then
 						$pos = ($ExecApp[0] = 0) ? 0 : UBound($ExecApp)
 						If $pos > 0 Then
@@ -244,7 +243,7 @@ Func fLoadConfig()
 						$ExecApp[$pos] = fOutlook
 					EndIf
 					ContinueLoop
-				Case "enableSnippingTool"
+				Case "enablesnippingtool"
 					If $value = 1 Then
 						$pos = ($ExecApp[0] = 0) ? 0 : UBound($ExecApp)
 						If $pos > 0 Then
@@ -283,6 +282,10 @@ Func fLoadConfig()
 		Next
 	EndIf
 
+	If FileExists($workDir) = 0 Then
+		DirCreate($workDir)
+	EndIf
+
 	; Close the handle returned by FileOpen.
 	FileClose($handleFileOpen)
 EndFunc
@@ -293,12 +296,21 @@ Func Quit($ret = 0)
 	Local $apps = ($runningApps[0][0] = 0) ? -1 : (UBound($runningApps) - 1)
 	If $apps = -1 Then
 		Exit $ret
+	Else
+		For $w = 0 To $apps
+			CloseApp($runningApps[$w][0])
+		Next
 	EndIf
 
-	; Else, close all apps
-	For $w = 0 To $apps
-		CloseApp($runningApps[$w][0])
-	Next
+	; Delete all files
+	Local $files = ($filesCreated[0] = 0) ? -1 : (UBound($filesCreated) - 1)
+	If $files <> -1 Then
+		For $f = 0 To $files
+			fDelete($filesCreated[$f])
+		Next
+	EndIf
+
+	; Exit Codes
 	If @HotKeyPressed == $hotkey Then
 		Exit 2
 	Else
@@ -450,7 +462,7 @@ Func fOpenApp($fullpath)
 EndFunc
 
 ; Delete File via Explorer with Shift+Delete and confirms prompt.
-Func fDelete($fullpath = $workDir)
+Func fDelete($fullpath)
 	If FileExists($fullpath) = 1 Then
 		Local $split = fSplitPath($fullpath)
 		Local $path   = $split[1] & $split[2]
@@ -472,6 +484,38 @@ Func fDelete($fullpath = $workDir)
 	EndIf
 EndFunc
 
+; Create random files
+Func fCreateFile($app)
+	; Check if directory exists
+	If FileExists($workDir) = False Then
+		DirCreate($workDir)
+	EndIf
+
+	; Add to the files array
+	Local $pos = ($filesCreated[0] = 0) ? 0 : UBound($filesCreated)
+	If $pos > 0 Then
+		ReDim $filesCreated[$pos+1]
+	EndIf
+	$filesCreated[$pos] = $workDir & "\" & Random(999,9999999,1)
+
+	; Save file
+	TrapSend(Random(999,9999999,1) & Random(999,9999999,1) & Random(999,9999999,1))
+	Send("{ENTER}")
+	Switch $app
+		Case "notepad"
+			$filesCreated[$pos] &= ".txt"
+			Send("^s")
+		Case "word"
+			$filesCreated[$pos] &= ".docx"
+			Send("{F12}")
+		Case "excel"
+			$filesCreated[$pos] &= ".xlsx"
+			Send("{F12}")
+	EndSwitch
+	TrapSleep(1000)
+	TrapSend($filesCreated[$pos])
+	Send("{ENTER}")
+EndFunc
 
 ;;;;;;;;;;;;;;;;;;;;
 ;
@@ -525,35 +569,13 @@ Func fNotepad()
 		If Not fOpenApp($notepad) Then
 			Return
 		Else
-			fNotepadCreateFile()
+			fCreateFile("notepad")
 		EndIf
 	Else
 		; Delete a random previously created file via Explorer
 		fDelete($filesCreated[Random(0,UBound($filesCreated)-1,1)])
 	EndIf
 EndFunc
-
-Func fNotepadCreateFile()
-	; Check if directory exists
-	If FileExists($workDir) = False Then
-		DirCreate($workDir)
-	EndIf
-
-	; Add to the files array
-	Local $pos = ($filesCreated[0] = 0) ? 0 : UBound($filesCreated)
-	If $pos > 0 Then
-		ReDim $filesCreated[$pos+1]
-	EndIf
-	$filesCreated[$pos] = $workDir & "\" & Random(999,9999999,1) & ".txt"
-
-	; Save via Notepad Save As menu
-	TrapSend(Random(999,9999999,1) & Random(999,9999999,1) & Random(999,9999999,1))
-	Send("{ENTER}" & "^S")
-	TrapSleep(1000)
-	TrapSend($filesCreated[$pos])
-	Send("{ENTER}")
-EndFunc
-
 
 ;;;;;;;;;;;;;;;;;;;;
 ;
@@ -648,12 +670,19 @@ Func fWord()
 		Return
 	EndIf
 
-	TrapSleep(3000)
+	TrapSleep(2000)
 	Send("{ENTER}")
 
-;	TODO:
-;	- Create a random file
-;	- Delete one of the previous files created
+	Local $actionOptions = 2
+	Local $randomChoice  = Random(1,$actionOptions,1)
+
+	; Create or Delete random file
+	If $filesCreated[0] = 0 Or $randomChoice = 1 Then
+		fCreateFile("word")
+	Else
+		; Delete a random previously created file via Explorer
+		fDelete($filesCreated[Random(0,UBound($filesCreated)-1,1)])
+	EndIf
 EndFunc
 
 
@@ -668,12 +697,19 @@ Func fExcel()
 		Return
 	EndIf
 
-	TrapSleep(3000)
+	TrapSleep(2000)
 	Send("{ENTER}")
 
-;	TODO:
-;	- Create a random file
-;	- Delete one of the previous files created
+	Local $actionOptions = 2
+	Local $randomChoice  = Random(1,$actionOptions,1)
+
+	; Create or Delete random file
+	If $filesCreated[0] = 0 Or $randomChoice = 1 Then
+		fCreateFile("excel")
+	Else
+		; Delete a random previously created file via Explorer
+		fDelete($filesCreated[Random(0,UBound($filesCreated)-1,1)])
+	EndIf
 EndFunc
 
 
@@ -692,3 +728,4 @@ Func fOutlook()
 ;	- Create a random e-mail and send.
 ;	- Open e-mail attachments.
 EndFunc
+
