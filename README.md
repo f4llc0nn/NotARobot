@@ -20,25 +20,25 @@ Considerations:
 <details>
   <summary>1) MS Edge</summary>
 
-![Edge Demo](https://github.com/0xleone/NotARobot/blob/main/Edge.gif)
+![Edge Demo](https://github.com/0xleone/NotARobot/blob/main/gifs/Edge.gif)
  
 </details>
 <details>
   <summary>2) MS Office365 (Outlook, Word, Excel)</summary>
   
-![Edge Word](https://github.com/0xleone/NotARobot/blob/main/Word.gif)
+![Edge Word](https://github.com/0xleone/NotARobot/blob/main/gifs/Word.gif)
  
 </details>
 <details>
   <summary>3) Notepad</summary>
 
-![Notepad Demo](https://github.com/0xleone/NotARobot/blob/main/Notepad.gif)
+![Notepad Demo](https://github.com/0xleone/NotARobot/blob/main/gifs/Notepad.gif)
  
 </details>
 <details>
   <summary>4) Calc</summary>
 
-![Calc Demo](https://github.com/0xleone/NotARobot/blob/main/Calc.gif)
+![Calc Demo](https://github.com/0xleone/NotARobot/blob/main/gifs/Calc.gif)
 
 </details>
 
@@ -62,7 +62,7 @@ If you want to force closing it, you can:
 The hotkey is **NOT** reliable since this project does a LOT of typing emulation and it can fail triggering the hotkey function.
 
 ## CURRENT TODO (DEC/2021):
-• Add Snipping Tool: Make a screenshot\
+• [DONE] Add Snipping Tool: Make a screenshot\
 • Word/Excel: Create a random file\
 • Word/Excel: Delete a random created file\
 • Outlook sending random e-mail to itself and/or to a disposable e-mail (e.g. temp-mail.org, 10minutemail.com)\
