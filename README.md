@@ -4,7 +4,7 @@ The goal is to be solid, feature-rich and a more "natural"* alternative to Sheep
 \* _meaning it uses Explorer navigation instead of launchers and/or powershell._
 
 It probably still need some adjustments to avoid weird parent-child process events.\
-_**This is a working in progress. Please check the this README and Release Notes.**_
+_**This is a working in progress. Please check README and Release Notes.**_
 
 ## Description
 Randomly opens explorer and navigate into a binary directory, then hit enters to open it (child process of explorer.exe, as natural as possible).
@@ -64,8 +64,8 @@ If you want to force closing it, you can:
 The hotkey is **NOT** reliable since this project does a LOT of typing emulation and it can fail triggering the hotkey function.
 
 ## CURRENT TODO (DEC/2021):
-• Add custom workDir in config file + handle dir permissions.\
-• Word/Excel: Create a random file\
-• Word/Excel: Delete a random created file\
 • Outlook sending random e-mail to itself and/or to a disposable e-mail (e.g. temp-mail.org, 10minutemail.com)\
-• Outlook opening random e-mail and attachments
+• Outlook opening random e-mail and attachments\
+• Edge downloading random files\
+• Redo the gifs with better resolution\
+• Test pointing the apps to a folder with .lnk files
