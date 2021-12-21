@@ -40,7 +40,7 @@ Also, each interaction has a 10% chance of finishing the program altogether.
 <details>
   <summary>5) Snipping Tool</summary>
 
-TODO: DEMO GIF
+![SnipTool Demo](https://github.com/0xleone/NotARobot/blob/main/gifs/SnippingTool.gif)
 
 </details>
 
